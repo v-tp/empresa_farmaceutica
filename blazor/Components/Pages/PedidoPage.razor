@@ -1,0 +1,126 @@
+﻿@page "/pedido"
+@using BlazorGestaoProdutos.Data
+@using BlazorGestaoProdutos.Services
+
+@inject IPedidoService pedidoService
+
+<PageTitle>Pedidos</PageTitle>
+
+<h1>Pedidos</h1>
+
+<!-- Botão para mostrar ou esconder o formulário -->
+<button class="btn btn-primary mb-3" @onclick="ToggleFormularioCadastro">
+    @(mostrarFormularioCadastro ? "Cancelar Cadastro" : "Cadastrar Novo Pedido")
+</button>
+
+@if (mostrarFormularioCadastro)
+{
+    <!-- Formulário de Cadastro -->
+    <div class="card p-3 mb-4">
+        <h3>Cadastrar Novo Pedido</h3>
+        <div class="mb-2">
+            <label for="idCliente">Cliente:</label>
+            <input id="idCliente" class="form-control" @bind="novoPedido.IdCliente" />
+        </div>
+        <div class="mb-2">
+            <label for="dataPedido">Data do Pedido:</label>
+            <input id="dataPedido" type="date" class="form-control" @bind="novoPedido.DataPedido" />
+        </div>
+        <div class="mb-2">
+            <label for="valorTotal">Valor Total:</label>
+            <input id="valorTotal" type="number" class="form-control" @bind="novoPedido.ValorTotal" />
+        </div>
+        <div>
+            <button class="btn btn-success me-2" @onclick="CadastrarPedido">Cadastrar</button>
+            <button class="btn btn-secondary" @onclick="ToggleFormularioCadastro">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (pedidos == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (!pedidos.Any())
+{
+    <p><em>Não há pedidos disponíveis.</em></p>
+}
+else
+{
+    <!-- Tabela com os pedidos cadastrados -->
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Data do pedido</th>
+                <th>Valor</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in pedidos)
+            {
+                <tr>
+                    <td>@pedido.Id</td>
+                    <td>@pedido.IdCliente</td>
+                    <td>@pedido.DataPedido</td>
+                    <td>@pedido.ValorTotal</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ExcluirPedido(pedido)">
+                            Excluir
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code
+{
+    private List<Pedido>? pedidos { get; set; }
+    private Pedido novoPedido = new Pedido();
+    private bool mostrarFormularioCadastro = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            pedidos = await pedidoService.GetPedidos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao buscar os pedidos: {ex.Message}");
+        }
+    }
+
+    private void ToggleFormularioCadastro()
+    {
+        mostrarFormularioCadastro = !mostrarFormularioCadastro;
+        if (!mostrarFormularioCadastro)
+        {
+            novoPedido = new Pedido(); // Reseta os campos ao cancelar
+        }
+    }
+
+    private async Task CadastrarPedido()
+    {
+        try
+        {
+            await pedidoService.CadastrarPedido(novoPedido);
+            pedidos = await pedidoService.GetPedidos();
+            ToggleFormularioCadastro(); // Fecha o formulário
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao cadastrar pedido: {ex.Message}");
+        }
+    }
+
+    private async Task ExcluirPedido(Pedido p)
+    {
+        await pedidoService.DeletarPedido(p);
+        pedidos = await pedidoService.GetPedidos();
+    }
+}

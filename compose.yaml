@@ -1,0 +1,59 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+      - "8082:443"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "https://+:443;http://+:80"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "api"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "./https-certificate.pfx"
+      CONNECTION_STRING: "server=db; port=3306; database=gestao_produtos; user=api; password=api"
+    networks:
+      - webnet  
+    depends_on:
+      - db
+    container_name: api
+    volumes:
+      - ./api/https-certificate.pfx:/app/https-certificate.pfx
+  
+  db:
+    image: mysql:8.0                  
+    container_name: mysql_service     
+    environment:
+      MYSQL_ROOT_PASSWORD: root      
+      MYSQL_DATABASE: gestao_produtos     
+      MYSQL_USER: api           
+      MYSQL_PASSWORD: api  
+    ports:
+      - "3306:3306"                  
+    volumes:
+      - ./mysql:/docker-entrypoint-initdb.d    
+    networks:
+      - webnet 
+
+  blazor-app:
+    build:
+      context: ./blazor
+      dockerfile: Dockerfile
+    container_name: blazor-app
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:80"
+      URL_API: "https://api:8082"
+    ports:
+      - "5000:80"
+    depends_on:
+      - api 
+    networks:
+      - webnet             
+
+volumes:
+  mysql_data:                        
+
+networks:
+  webnet:
+    driver: bridge                     

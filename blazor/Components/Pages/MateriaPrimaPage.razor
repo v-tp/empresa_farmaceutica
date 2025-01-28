@@ -1,0 +1,138 @@
+﻿@page "/materiaPrima"
+@using BlazorGestaoProdutos.Data
+@using BlazorGestaoProdutos.Services
+
+@inject IMateriaPrimaService materiaPrimaService
+
+<PageTitle>Matéria Prima</PageTitle>
+
+<h1>Matéria Prima</h1>
+
+<!-- Botão para mostrar ou esconder o formulário -->
+<button class="btn btn-primary mb-3" @onclick="ToggleFormularioCadastro">
+    @(mostrarFormularioCadastro ? "Cancelar Cadastro" : "Cadastrar Nova Matéria-Prima")
+</button>
+
+@if (mostrarFormularioCadastro)
+{
+    <!-- Formulário de Cadastro -->
+    <div class="card p-3 mb-4">
+        <h3>Cadastrar Nova Matéria-Prima</h3>
+        <div class="mb-2">
+            <label for="nome">Nome:</label>
+            <input id="nome" class="form-control" @bind="novaMateriaPrima.Nome" />
+        </div>
+        <div class="mb-2">
+            <label for="descricao">Descrição:</label>
+            <input id="descricao" class="form-control" @bind="novaMateriaPrima.Descricao" />
+        </div>
+        <div class="mb-2">
+            <label for="fornecedor">Fornecedor:</label>
+            <input id="fornecedor" class="form-control" @bind="novaMateriaPrima.Fornecedor" />
+        </div>
+        <div class="mb-2">
+            <label for="qtdEstoque">Quantidade em Estoque:</label>
+            <input id="qtdEstoque" type="number" class="form-control" @bind="novaMateriaPrima.QtdEstoque" />
+        </div>
+        <div class="mb-2">
+            <label for="dtValidade">Data de Validade:</label>
+            <input id="dtValidade" type="date" class="form-control" @bind="novaMateriaPrima.DtValidade" />
+        </div>
+        <div>
+            <button class="btn btn-success me-2" @onclick="CadastrarMateriaPrima">Cadastrar</button>
+            <button class="btn btn-secondary" @onclick="ToggleFormularioCadastro">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (materiasPrimas == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (!materiasPrimas.Any())
+{
+    <p><em>Não há matérias-primas disponíveis.</em></p>
+}
+else
+{
+    <!-- Tabela com as matérias-primas cadastradas -->
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Fornecedor</th>
+                <th>Quantidade em estoque</th>
+                <th>Data de validade</th>
+                <th>Ações</th> 
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var materiaPrima in materiasPrimas)
+            {
+                <tr>
+                    <td>@materiaPrima.Id</td>
+                    <td>@materiaPrima.Nome</td>
+                    <td>@materiaPrima.Descricao</td>
+                    <td>@materiaPrima.Fornecedor</td>
+                    <td>@materiaPrima.QtdEstoque</td>
+                    <td>@materiaPrima.DtValidade</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ExcluirMateriaPrima(materiaPrima)">
+                            Excluir
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code
+{
+    private List<MateriaPrima>? materiasPrimas { get; set; }
+    private MateriaPrima novaMateriaPrima = new MateriaPrima();
+    private bool mostrarFormularioCadastro = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            materiasPrimas = await materiaPrimaService.GetMateriasPrimas();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao buscar as matérias-primas: {ex.Message}");
+        }
+    }
+
+    private void ToggleFormularioCadastro()
+    {
+        mostrarFormularioCadastro = !mostrarFormularioCadastro;
+        if (!mostrarFormularioCadastro)
+        {
+            novaMateriaPrima = new MateriaPrima(); // Reseta os campos ao cancelar
+        }
+    }
+
+    private async Task CadastrarMateriaPrima()
+    {
+        try
+        {
+            await materiaPrimaService.CadastrarMateriaPrima(novaMateriaPrima);
+            materiasPrimas = await materiaPrimaService.GetMateriasPrimas();
+            ToggleFormularioCadastro(); // Fecha o formulário
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao cadastrar matéria-prima: {ex.Message}");
+        }
+    }
+
+    private async Task ExcluirMateriaPrima(MateriaPrima m)
+    {
+        await materiaPrimaService.DeletarMateriaPrima(m);
+        materiasPrimas = await materiaPrimaService.GetMateriasPrimas();
+    }
+}

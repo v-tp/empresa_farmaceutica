@@ -1,0 +1,140 @@
+﻿@page "/cliente"
+@using BlazorGestaoProdutos.Data
+@using BlazorGestaoProdutos.Services
+@inject IClienteService clienteService
+
+<PageTitle>Clientes</PageTitle>
+
+<h1>Clientes</h1>
+
+<button class="btn btn-primary mb-3" @onclick="ToggleFormularioCadastro">
+    @(mostrarFormularioCadastro ? "Cancelar Cadastro" : "Cadastrar Novo Cliente")
+</button>
+
+@if (mostrarFormularioCadastro)
+{
+    <!-- Formulário de Cadastro -->
+    <div class="card p-3 mb-4">
+        <h3>Cadastrar Novo Cliente</h3>
+        <div class="mb-2">
+            <label for="nome">Nome:</label>
+            <input id="nome" class="form-control" @bind="novoCliente.Nome" />
+        </div>
+        <div class="mb-2">
+            <label for="cpf">CPF:</label>
+            <input id="cpf" class="form-control" @bind="novoCliente.Cpf" />
+        </div>
+        <div class="mb-2">
+            <label for="endereco">Endereço:</label>
+            <input id="endereco" class="form-control" @bind="novoCliente.Endereco" />
+        </div>
+        <div class="mb-2">
+            <label for="telefone">Telefone:</label>
+            <input id="telefone" class="form-control" @bind="novoCliente.Telefone" />
+        </div>
+        <div class="mb-2">
+            <label for="email">Email:</label>
+            <input id="email" class="form-control" @bind="novoCliente.Email" />
+        </div>
+        <div>
+            <button class="btn btn-success me-2" @onclick="CadastrarCliente">Cadastrar</button>
+            <button class="btn btn-secondary" @onclick="ToggleFormularioCadastro">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (clientes == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (!clientes.Any())
+{
+    <p><em>Não há clientes disponíveis.</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Cpf</th>
+                <th>Endereco</th>
+                <th>Telefone</th>
+                <th>Email</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cliente in clientes)
+            {
+                <tr>
+                    <td>@cliente.Id</td>
+                    <td>@cliente.Nome</td>
+                    <td>@cliente.Cpf</td>
+                    <td>@cliente.Endereco</td>
+                    <td>@cliente.Telefone</td>
+                    <td>@cliente.Email</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => ExcluirCliente(cliente)">Excluir</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code
+{
+    private List<Cliente>? clientes { get; set; }
+    private Cliente novoCliente = new Cliente();
+    private bool mostrarFormularioCadastro = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clientes = await clienteService.GetClientes();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao buscar os clientes: {ex.Message}");
+        }
+    }
+
+    private void ToggleFormularioCadastro()
+    {
+        mostrarFormularioCadastro = !mostrarFormularioCadastro;
+        if (!mostrarFormularioCadastro)
+        {
+            novoCliente = new Cliente(); // Reseta os campos ao cancelar
+        }
+    }
+
+    private async Task CadastrarCliente()
+    {
+        try
+        {
+            await clienteService.CadastrarCliente(novoCliente);
+            clientes = await clienteService.GetClientes();
+            ToggleFormularioCadastro(); // Fecha o formulário
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao cadastrar cliente: {ex.Message}");
+        }
+    }
+
+    private async Task ExcluirCliente(Cliente c)
+    {
+        try
+        {
+            await clienteService.DeletarCliente(c);
+            clientes = await clienteService.GetClientes();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao excluir cliente: {ex.Message}");
+        }
+    }
+}
